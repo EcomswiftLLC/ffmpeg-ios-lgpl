@@ -21,8 +21,7 @@ static void need_mux(const char *n) {
 }
 static void need_filter(const char *n) {
   const AVFilter *f = avfilter_get_by_name(n);
-  printf("filter  %-18s %s
-", n, f ? "ok" : "MISSING");
+  printf("filter  %-18s %s\n", n, f ? "ok" : "MISSING");
   if (!f) fails++;
 }
 static void need_demux(const char *n) {
