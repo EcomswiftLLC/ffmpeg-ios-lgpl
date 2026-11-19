@@ -232,7 +232,7 @@ cp "$FFLIB/libswscale.a" "$WORK/libswscale_nohalf.a"
   -compatibility_version 1.0.0 -current_version 1.0.0 \
   -Wl,-all_load \
   "$FFLIB/libavformat.a" "$FFLIB/libavcodec.a" "$FFLIB/libavfilter.a" "$WORK/libswscale_nohalf.a" "$FFLIB/libswresample.a" "$FFLIB/libavutil.a" \
-  "$PREFIX/lib/libvpx.a" "$PREFIX/lib/libopus.a" "$PREFIX/lib/libvorbisenc.a" "$PREFIX/lib/libvorbis.a" "$PREFIX/lib/libtheoraenc.a" "$PREFIX/lib/libtheoradec.a" "$PREFIX/lib/libogg.a" \
+  "$PREFIX/lib/libvpx.a" "$PREFIX/lib/libopus.a" "$PREFIX/lib/libvorbisenc.a" "$PREFIX/lib/libvorbis.a" -Wl,-noall_load "$PREFIX/lib/libtheoraenc.a" "$PREFIX/lib/libtheoradec.a" -Wl,-all_load "$PREFIX/lib/libogg.a" \
   "$PREFIX/lib/libmp3lame.a" "$PREFIX/lib/libwebp.a" "$PREFIX/lib/libwebpmux.a" "$PREFIX/lib/libsharpyuv.a" "$PREFIX/lib/libdav1d.a" \
   -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework AudioToolbox -framework Security \
   -lz -lm -lc++ \
