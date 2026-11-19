@@ -218,11 +218,14 @@ section framework
 FW="$OUT/FFmpegLGPL.framework"
 rm -rf "$FW"; mkdir -p "$FW/Headers"
 FFLIB="$PREFIX/ffmpeg/lib"
+# libswscale and libavcodec both carry half2float.o; with -all_load that is a duplicate symbol. Keep avcodec's copy.
+cp "$FFLIB/libswscale.a" "$WORK/libswscale_nohalf.a"
+/usr/bin/ar d "$WORK/libswscale_nohalf.a" half2float.o
 "$CC" -dynamiclib -target "$TARGET" -isysroot "$SDK" \
   -install_name "@rpath/FFmpegLGPL.framework/FFmpegLGPL" \
   -compatibility_version 1.0.0 -current_version 1.0.0 \
   -Wl,-all_load \
-  "$FFLIB/libavformat.a" "$FFLIB/libavcodec.a" "$FFLIB/libavfilter.a" "$FFLIB/libswscale.a" "$FFLIB/libswresample.a" "$FFLIB/libavutil.a" \
+  "$FFLIB/libavformat.a" "$FFLIB/libavcodec.a" "$FFLIB/libavfilter.a" "$WORK/libswscale_nohalf.a" "$FFLIB/libswresample.a" "$FFLIB/libavutil.a" \
   "$PREFIX/lib/libvpx.a" "$PREFIX/lib/libopus.a" "$PREFIX/lib/libvorbisenc.a" "$PREFIX/lib/libvorbis.a" "$PREFIX/lib/libogg.a" \
   "$PREFIX/lib/libmp3lame.a" "$PREFIX/lib/libwebp.a" "$PREFIX/lib/libwebpmux.a" "$PREFIX/lib/libsharpyuv.a" "$PREFIX/lib/libdav1d.a" \
   -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework AudioToolbox -framework Security \
