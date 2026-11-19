@@ -101,12 +101,25 @@ cmake --build "$WORK/libwebp/b" -j "$JOBS" >/dev/null && cmake --install "$WORK/
 section libvpx
 fetch libvpx "https://github.com/webmproject/libvpx/archive/refs/tags/v$LIBVPX_VERSION.tar.gz" "libvpx-$LIBVPX_VERSION.tar.gz"
 unpack "libvpx-$LIBVPX_VERSION.tar.gz" libvpx
-if [ "$SDKNAME" = iphoneos ]; then VPX_TARGET=arm64-darwin-gcc; else VPX_TARGET=arm64-iphonesimulator-darwin-gcc; fi
-( cd "$WORK/libvpx" && CC="$CC" CXX="$CXX" AR="$AR" LD="$CC" STRIP="$STRIP" \
-  ./configure --target="$VPX_TARGET" --prefix="$PREFIX" --extra-cflags="-target $TARGET -isysroot $SDK -fPIC" \
-  --disable-examples --disable-tools --disable-docs --disable-unit-tests --disable-install-bins --disable-install-srcs \
-  --enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-shared --enable-vp9-highbitdepth --enable-multi-res-encoding \
-  && make -j"$JOBS" && make install )
+VPX_TARGET=arm64-darwin-gcc
+# libvpx hard-codes its own -isysroot / -miphoneos-version-min flags (iOS 8, device SDK). Wrap the compiler so our
+# target triple and SDK always win (this is what makes the simulator slice come out as a real simulator build).
+cat > "$WORK/cc-wrap.sh" <<WRAP
+#!/bin/bash
+args=()
+skip=0
+for a in "\$@"; do
+  if [ "\$skip" = 1 ]; then skip=0; continue; fi
+  case "\$a" in
+    -isysroot) skip=1 ;;
+    -miphoneos-version-min=*|-mios-simulator-version-min=*|-mios-version-min=*|-arch) [ "\$a" = "-arch" ] && skip=1 ;;
+    *) args+=("\$a") ;;
+  esac
+done
+exec "$CC" -target $TARGET -isysroot "$SDK" "\${args[@]}"
+WRAP
+chmod +x "$WORK/cc-wrap.sh"
+( cd "$WORK/libvpx" && CC="$WORK/cc-wrap.sh" CXX="$WORK/cc-wrap.sh" AS="$WORK/cc-wrap.sh" LD="$WORK/cc-wrap.sh" AR="$AR" STRIP="$STRIP"   ./configure --target="$VPX_TARGET" --prefix="$PREFIX"   --disable-examples --disable-tools --disable-docs --disable-unit-tests --disable-install-bins --disable-install-srcs   --enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-shared --enable-vp9-highbitdepth   && make -j"$JOBS" && make install )
 # libvpx may install headers/libs without a pkg-config file for cross builds; make sure one exists
 if [ ! -f "$PREFIX/lib/pkgconfig/vpx.pc" ]; then
 cat > "$PREFIX/lib/pkgconfig/vpx.pc" <<EOF
