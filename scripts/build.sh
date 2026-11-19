@@ -72,7 +72,7 @@ unpack "libvorbis-$LIBVORBIS_VERSION.tar.gz" libvorbis
 section libmp3lame
 fetch lame "https://downloads.sourceforge.net/project/lame/lame/$LAME_VERSION/lame-$LAME_VERSION.tar.gz" "lame-$LAME_VERSION.tar.gz"
 unpack "lame-$LAME_VERSION.tar.gz" lame
-( cd "$WORK/lame" && CC="$CC" CFLAGS="$COMMON -include strings.h" LDFLAGS="-target $TARGET -isysroot $SDK" \
+( cd "$WORK/lame" && CC="$CC" CFLAGS="$COMMON -include stdlib.h -include string.h -include strings.h -include math.h -Wno-implicit-function-declaration -Wno-int-conversion" LDFLAGS="-target $TARGET -isysroot $SDK" \
   ./configure --host=aarch64-apple-darwin --prefix="$PREFIX" --disable-shared --enable-static --disable-frontend --disable-decoder --disable-gtktest >/dev/null \
   && make -C libmp3lame -j"$JOBS" >/dev/null && make -C libmp3lame install >/dev/null && make -C include install >/dev/null )
 

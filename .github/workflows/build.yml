@@ -6,9 +6,6 @@ on:
         description: "Release tag to publish (empty = build only)"
         required: false
         default: ""
-  push:
-    branches: [main]
-    paths: ["scripts/**", ".github/workflows/build.yml"]
 
 permissions:
   contents: write
