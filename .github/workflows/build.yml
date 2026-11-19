@@ -1,0 +1,100 @@
+name: Build FFmpeg LGPL xcframework
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (empty = build only)"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths: ["scripts/**", ".github/workflows/build.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.sdk }}
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [iphoneos, iphonesimulator]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tools
+        run: |
+          brew install meson ninja nasm pkg-config cmake autoconf automake libtool || true
+          xcodebuild -version
+      - uses: actions/cache@v4
+        with:
+          path: build/src
+          key: srcs-${{ hashFiles('scripts/versions.env') }}
+      - name: Build
+        run: bash scripts/build.sh ${{ matrix.sdk }}
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: out-${{ matrix.sdk }}
+          path: build/out/${{ matrix.sdk }}
+          retention-days: 7
+
+  package:
+    needs: build
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: dl }
+      - name: Create xcframework
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          xcodebuild -create-xcframework \
+            -framework dl/out-iphoneos/FFmpegLGPL.framework \
+            -framework dl/out-iphonesimulator/FFmpegLGPL.framework \
+            -output dist/FFmpegLGPL.xcframework
+          cp -R dl/out-iphoneos/include dist/include
+          cp NOTICE.md dist/FFmpegLGPL.xcframework/NOTICE.md
+          (cd dist && ditto -c -k --sequesterRsrc --keepParent FFmpegLGPL.xcframework FFmpegLGPL.xcframework.zip)
+          (cd dist && ditto -c -k --sequesterRsrc --keepParent include FFmpegLGPL-headers.zip)
+          cp dl/out-iphoneos/ffmpeg-config.mak dist/ffmpeg-config-iphoneos.mak
+          (cd dist && shasum -a 256 FFmpegLGPL.xcframework.zip FFmpegLGPL-headers.zip > checksums.txt && cat checksums.txt)
+      - name: Check no GPL
+        run: |
+          set -euo pipefail
+          grep -E '^(CONFIG_GPL|CONFIG_NONFREE|CONFIG_VERSION3)=' dist/ffmpeg-config-iphoneos.mak || true
+          if grep -E '^CONFIG_GPL=yes|^CONFIG_NONFREE=yes|^CONFIG_VERSION3=yes' dist/ffmpeg-config-iphoneos.mak; then echo "GPL or nonfree build!"; exit 1; fi
+          ls dist/FFmpegLGPL.xcframework
+          BIN=dist/FFmpegLGPL.xcframework/ios-arm64/FFmpegLGPL.framework/FFmpegLGPL
+          lipo -info "$BIN"
+          nm -gU "$BIN" | grep -cE ' _(avformat_open_input|avcodec_send_packet|avfilter_graph_parse_ptr|sws_scale|swr_convert|vpx_codec_vp9_cx|opus_encode|dav1d_open)$' || true
+          otool -L "$BIN"
+      - name: Smoke test in simulator
+        run: |
+          set -euo pipefail
+          SIMFW="$PWD/dist/FFmpegLGPL.xcframework/ios-arm64-simulator"
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
+          xcrun --sdk iphonesimulator clang -target arm64-apple-ios17.0-simulator -isysroot "$SDK" \
+            -I dist/include -F "$SIMFW" -framework FFmpegLGPL -Wl,-rpath,"$SIMFW" \
+            scripts/smoketest.c -o smoketest
+          UDID=$(xcrun simctl list devices available | grep -E 'iPhone' | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "sim $UDID"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl spawn "$UDID" "$PWD/smoketest" | tee dist/smoketest-output.txt
+          grep -q "SMOKETEST PASSED" dist/smoketest-output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 14
+      - name: Publish release
+        if: ${{ github.event.inputs.tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" --title "FFmpeg LGPL for iOS $TAG" --notes-file RELEASE_NOTES.md \
+            dist/FFmpegLGPL.xcframework.zip dist/FFmpegLGPL-headers.zip dist/checksums.txt dist/ffmpeg-config-iphoneos.mak dist/smoketest-output.txt
