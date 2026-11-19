@@ -175,7 +175,7 @@ unpack "ffmpeg-$FFMPEG_VERSION.tar.xz" ffmpeg
     --disable-shared --enable-static --enable-pic --disable-symver \
     --disable-gpl --disable-nonfree --disable-version3 \
     --enable-zlib --enable-videotoolbox --enable-audiotoolbox \
-    --enable-libvpx --enable-libopus --enable-libvorbis --enable-libmp3lame --enable-libwebp --enable-libdav1d \n    || { echo '=== configure failed: config.log tail ==='; tail -n 70 ffbuild/config.log; ls -la "$PREFIX/lib" | head -40; nm -g "$PREFIX/lib/libvpx.a" 2>/dev/null | grep -E 'vpx_codec_dec_init_ver|vpx_codec_vp8_dx' | head; lipo -info "$PREFIX/lib/libvpx.a"; exit 1; }
+    --enable-libvpx --enable-libopus --enable-libvorbis --enable-libmp3lame --enable-libwebp --enable-libdav1d \n    || { echo '=== configure failed: config.log tail ==='; L=$(find "$WORK/ffmpeg" -maxdepth 2 -name config.log | head -1); echo "log: $L"; grep -n -B3 -A22 'vpx_codec_dec_init' "$L" | tail -n 90; ls -la "$PREFIX/lib" | head -40; nm -g "$PREFIX/lib/libvpx.a" 2>/dev/null | grep -E 'vpx_codec_dec_init_ver|vpx_codec_vp8_dx' | head; lipo -info "$PREFIX/lib/libvpx.a"; exit 1; }
   grep -E '^(CONFIG_GPL|CONFIG_NONFREE|CONFIG_VERSION3)=' ffbuild/config.mak || true
   make -j"$JOBS"
   make install
