@@ -119,7 +119,37 @@ done
 exec "$CC" -target $TARGET -isysroot "$SDK" "\${args[@]}"
 WRAP
 chmod +x "$WORK/cc-wrap.sh"
-( cd "$WORK/libvpx" && CC="$WORK/cc-wrap.sh" CXX="$WORK/cc-wrap.sh" AS="$WORK/cc-wrap.sh" LD="$WORK/cc-wrap.sh" AR="$AR" STRIP="$STRIP"   ./configure --target="$VPX_TARGET" --prefix="$PREFIX"   --disable-examples --disable-tools --disable-docs --disable-unit-tests --disable-install-bins --disable-install-srcs   --enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-shared --enable-vp9-highbitdepth   && make -j"$JOBS" && make install )
+# libvpx's configure ignores $CC on Darwin and asks `xcrun --sdk iphoneos --find clang|as` instead, which always yields a
+# device build. Shadow xcrun so those lookups return target-aware wrappers (needed for the simulator slice).
+cat > "$WORK/as-wrap.sh" <<ASWRAP
+#!/bin/bash
+args=()
+skip=0
+for a in "\$@"; do
+  if [ "\$skip" = 1 ]; then skip=0; continue; fi
+  case "\$a" in
+    -arch) skip=1 ;;
+    *) args+=("\$a") ;;
+  esac
+done
+exec "$CC" -target $TARGET -isysroot "$SDK" -c "\${args[@]}"
+ASWRAP
+chmod +x "$WORK/as-wrap.sh"
+mkdir -p "$WORK/shim"
+cat > "$WORK/shim/xcrun" <<XCRUN
+#!/bin/bash
+find=0; last=""
+for a in "\$@"; do [ "\$a" = "--find" ] && find=1; last="\$a"; done
+if [ \$find = 1 ]; then
+  case "\$last" in
+    clang|clang++) echo "$WORK/cc-wrap.sh"; exit 0 ;;
+    as) echo "$WORK/as-wrap.sh"; exit 0 ;;
+  esac
+fi
+exec /usr/bin/xcrun "\$@"
+XCRUN
+chmod +x "$WORK/shim/xcrun"
+( cd "$WORK/libvpx" && export PATH="$WORK/shim:$PATH" && CC="$WORK/cc-wrap.sh" CXX="$WORK/cc-wrap.sh" AS="$WORK/cc-wrap.sh" LD="$WORK/cc-wrap.sh" AR="$AR" STRIP="$STRIP"   ./configure --target="$VPX_TARGET" --prefix="$PREFIX"   --disable-examples --disable-tools --disable-docs --disable-unit-tests --disable-install-bins --disable-install-srcs   --enable-vp8 --enable-vp9 --enable-pic --enable-static --disable-shared --enable-vp9-highbitdepth   && make -j"$JOBS" && make install )
 # libvpx may install headers/libs without a pkg-config file for cross builds; make sure one exists
 if [ ! -f "$PREFIX/lib/pkgconfig/vpx.pc" ]; then
 cat > "$PREFIX/lib/pkgconfig/vpx.pc" <<EOF
