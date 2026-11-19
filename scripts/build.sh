@@ -47,6 +47,8 @@ fetch() { # name url file
 unpack() { # file dir
   rm -rf "$WORK/$2"; mkdir -p "$WORK/$2"
   tar -xf "$SRC/$1" -C "$WORK/$2" --strip-components=1
+  # old autotools scripts add a linker flag that Apple's current ld rejects
+  if [ -f "$WORK/$2/configure" ]; then perl -pi -e 's/-force_cpusubtype_ALL//g' "$WORK/$2/configure"; fi
 }
 section() { echo; echo "=================== $* ==================="; }
 
