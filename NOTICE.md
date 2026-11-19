@@ -13,7 +13,7 @@ Bundled libraries (all permissive or LGPL, no GPL, no x264/x265/fdk-aac):
 | FFmpeg (libavformat, libavcodec, libavfilter, libswscale, libswresample, libavutil) | LGPL 2.1+ |
 | libvpx (VP8/VP9) | BSD-3-Clause |
 | libopus | BSD-3-Clause |
-| libvorbis + libogg | BSD-3-Clause |
+| libvorbis + libtheora + libogg | BSD-3-Clause |
 | LAME (libmp3lame) | LGPL 2.1+ |
 | libwebp | BSD-3-Clause |
 | dav1d (AV1 decoder) | BSD-2-Clause |

@@ -68,6 +68,12 @@ unpack "libvorbis-$LIBVORBIS_VERSION.tar.gz" libvorbis
   ./configure --host=aarch64-apple-darwin --prefix="$PREFIX" --disable-shared --enable-static --disable-oggtest --disable-docs --disable-examples >/dev/null \
   && make -j"$JOBS" >/dev/null && make install >/dev/null )
 
+# ---------- libtheora ----------
+section libtheora
+fetch libtheora "https://downloads.xiph.org/releases/theora/libtheora-$LIBTHEORA_VERSION.tar.gz" "libtheora-$LIBTHEORA_VERSION.tar.gz"
+unpack "libtheora-$LIBTHEORA_VERSION.tar.gz" libtheora
+( cd "$WORK/libtheora" && CC="$CC" CFLAGS="$COMMON" LDFLAGS="-target $TARGET -isysroot $SDK"   ./configure --host=aarch64-apple-darwin --prefix="$PREFIX" --disable-shared --enable-static --disable-oggtest --disable-vorbistest     --disable-sdltest --disable-examples --disable-spec --disable-doc --disable-asm >/dev/null   && make -j"$JOBS" >/dev/null && make install >/dev/null )
+
 # ---------- lame ----------
 section libmp3lame
 fetch lame "https://downloads.sourceforge.net/project/lame/lame/$LAME_VERSION/lame-$LAME_VERSION.tar.gz" "lame-$LAME_VERSION.tar.gz"
@@ -205,7 +211,7 @@ unpack "ffmpeg-$FFMPEG_VERSION.tar.xz" ffmpeg
     --disable-shared --enable-static --enable-pic --disable-symver \
     --disable-gpl --disable-nonfree --disable-version3 \
     --enable-zlib --enable-videotoolbox --enable-audiotoolbox \
-    --enable-libvpx --enable-libopus --enable-libvorbis --enable-libmp3lame --enable-libwebp --enable-libdav1d \
+    --enable-libvpx --enable-libopus --enable-libvorbis --enable-libtheora --enable-libmp3lame --enable-libwebp --enable-libdav1d \
     --logfile="$ROOT/ffconfig-$SDKNAME.log" \
     || { echo '=== configure failed: config.log tail ==='; echo "pwd=$(pwd)"; ls -la . | head -30; L="$ROOT/ffconfig-$SDKNAME.log"; ls -la "$L"; grep -n -B3 -A22 'vpx_codec_dec_init\|libvpx' "$L" | tail -n 120; ls -la "$PREFIX/lib" | head -40; nm -g "$PREFIX/lib/libvpx.a" 2>/dev/null | grep -E 'vpx_codec_dec_init_ver|vpx_codec_vp8_dx' | head; lipo -info "$PREFIX/lib/libvpx.a"; exit 1; }
   grep -E '^(CONFIG_GPL|CONFIG_NONFREE|CONFIG_VERSION3)=' ffbuild/config.mak || true
@@ -226,7 +232,7 @@ cp "$FFLIB/libswscale.a" "$WORK/libswscale_nohalf.a"
   -compatibility_version 1.0.0 -current_version 1.0.0 \
   -Wl,-all_load \
   "$FFLIB/libavformat.a" "$FFLIB/libavcodec.a" "$FFLIB/libavfilter.a" "$WORK/libswscale_nohalf.a" "$FFLIB/libswresample.a" "$FFLIB/libavutil.a" \
-  "$PREFIX/lib/libvpx.a" "$PREFIX/lib/libopus.a" "$PREFIX/lib/libvorbisenc.a" "$PREFIX/lib/libvorbis.a" "$PREFIX/lib/libogg.a" \
+  "$PREFIX/lib/libvpx.a" "$PREFIX/lib/libopus.a" "$PREFIX/lib/libvorbisenc.a" "$PREFIX/lib/libvorbis.a" "$PREFIX/lib/libtheoraenc.a" "$PREFIX/lib/libtheoradec.a" "$PREFIX/lib/libogg.a" \
   "$PREFIX/lib/libmp3lame.a" "$PREFIX/lib/libwebp.a" "$PREFIX/lib/libwebpmux.a" "$PREFIX/lib/libsharpyuv.a" "$PREFIX/lib/libdav1d.a" \
   -framework CoreFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework AudioToolbox -framework Security \
   -lz -lm -lc++ \

@@ -34,7 +34,7 @@ int main(void) {
   printf("license: %s\n", avformat_license());
   if (strstr(avformat_license(), "GPL") && !strstr(avformat_license(), "LGPL")) { printf("GPL BUILD DETECTED\n"); fails++; }
   if (strstr(avformat_configuration(), "--enable-gpl") && !strstr(avformat_configuration(), "--disable-gpl")) { printf("enable-gpl in config\n"); fails++; }
-  const char *encs[] = {"h264_videotoolbox", "hevc_videotoolbox", "libvpx", "libvpx-vp9", "libopus", "libvorbis", "libmp3lame",
+  const char *encs[] = {"h264_videotoolbox", "hevc_videotoolbox", "libvpx", "libvpx-vp9", "libopus", "libvorbis", "libtheora", "libmp3lame",
                         "libwebp", "aac", "flac", "mpeg4", "mpeg2video", "mjpeg", "wmv2", "msmpeg4", "flv", "pcm_s16le", "ac3", "alac", "gif", "apng", "libwebp_anim", "prores_ks", "wmav2", NULL};
   for (int i = 0; encs[i]; i++) need_enc(encs[i]);
   const char *decs[] = {"h264", "hevc", "libdav1d", "vp8", "vp9", "wmv3", "mpeg4", "msmpeg4", "mpeg2video", "theora", "vorbis", "opus", "mp3", "aac", "ac3", "eac3", "flac", "wmav2", "amrnb", "rv40", "dvvideo", "mjpeg", NULL};
