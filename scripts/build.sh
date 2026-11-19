@@ -72,7 +72,7 @@ unpack "libvorbis-$LIBVORBIS_VERSION.tar.gz" libvorbis
 section libtheora
 fetch libtheora "https://downloads.xiph.org/releases/theora/libtheora-$LIBTHEORA_VERSION.tar.gz" "libtheora-$LIBTHEORA_VERSION.tar.gz"
 unpack "libtheora-$LIBTHEORA_VERSION.tar.gz" libtheora
-( cd "$WORK/libtheora" && CC="$CC" CFLAGS="$COMMON" LDFLAGS="-target $TARGET -isysroot $SDK"   ./configure --host=aarch64-apple-darwin --prefix="$PREFIX" --disable-shared --enable-static --disable-oggtest --disable-vorbistest     --disable-sdltest --disable-examples --disable-spec --disable-doc --disable-asm >/dev/null   && make -j"$JOBS" >/dev/null && make install >/dev/null )
+( cd "$WORK/libtheora" && cp "$WORK/libvorbis/config.sub" "$WORK/libvorbis/config.guess" . && CC="$CC" CFLAGS="$COMMON" LDFLAGS="-target $TARGET -isysroot $SDK"   ./configure --host=aarch64-apple-darwin --prefix="$PREFIX" --disable-shared --enable-static --disable-oggtest --disable-vorbistest     --disable-sdltest --disable-examples  --disable-asm --with-ogg="$PREFIX" --with-vorbis="$PREFIX" >/dev/null   && make -j"$JOBS" >/dev/null && make install >/dev/null )
 
 # ---------- lame ----------
 section libmp3lame
